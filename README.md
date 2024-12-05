@@ -3,11 +3,10 @@
 Mid Term Assignment for the Parallel Programming for Machine Learning course, held by professor Marco Bertini at University of Florence, Italy.
 
 ## 1 - Introduction
-Presentazione del problema, menzionando i vantaggi ottenibili tramite l'utilizzo di OpenMP.
-Logica dietro all'operazione di base del rendering: 2 operazioni = sorting in base alla z + processing del colore con alpha blending.
+Logica dietro all'operazione di base dell'image renderer, menzionando brevemente le operazioni che potrebbero essere parallelizzabili: 2 operazioni = sorting in base alla z + processing del colore con alpha blending.
 
 ## 2 - Code
-Logica dietro all'operazione di base del rendering: 2 operazioni = sorting in base alla z + processing del colore con alpha blending
+Presentazione del problema e riassunto breve dell'approccio, menzionando i vantaggi ottenibili tramite l'utilizzo di OpenMP.
 
 ### 2.1 - Hardware and Software setup
 Hardware; versione di OpenMP e di C++; studio rapido del CMake.
