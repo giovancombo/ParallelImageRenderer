@@ -1,4 +1,5 @@
 # Parallel Image Renderer in C++ with OpenMP
+
 Mid Term Assignment for the Parallel Programming for Machine Learning course, held by professor Marco Bertini at University of Florence, Italy.
 
 ## 1 - Abstract
