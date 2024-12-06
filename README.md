@@ -80,8 +80,10 @@ Tale operazione è infatti facilmente effettuabile in modo **indipendente** su c
 
 La complessità totale dell'Image Renderer, infatti, diventerebbe O(num_circles . log(num_circles) + (canvas_size . canvas_size . num_circles)/(overhead*num_threads)), con num_threads > 1, e una piccola componente overhead < 1 dovuta all'overhead per la creazione di multipli threads paralleli.
 
+La strategia di parallelizzazione prevede dunque di agire sul for loop innestato, nel quale avviene l'operazione di processing indipendente dei pixel, applicando per prima cosa la direttiva base #pragma omp parallel for fuori dal for loop esterno. In questo modo, l'operazione di fork e conseguente creazione dei threads avviene una sola volta, risultando in un quantitativo accettabile di overhead. Applicare la direttiva solamente al for loop interno avrebbe portato a un'operazione di fork-join ripetuta per ogni singola riga della superficie 2D, risultando in una gestione fortemente impattante dell'overhead di parallelizzazione, dovuto alla continua creazione e distruzione dei threads. Per fini puramente dimostrativi, ho valutato entrambi gli approcci.
 
-Presentazione iniziale delle aspettative che ho riguardo l'implementazione parallela, ovvero lo speedup.
+PLOT
+
 Poi, implementazione passo passo di clausole diverse partendo dalla direttiva base.
 1. parallel + for
 2. parallel for inner loop
