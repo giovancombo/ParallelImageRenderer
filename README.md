@@ -42,16 +42,16 @@ Dal punto di vista strettamente operativo, un Image Renderer così come descritt
 
 Dato che la disposizione dei cerchi nello spazio è randomica, è chiaro che, in fase di proiezione sulla superficie 2D, pixel diversi della superficie si troveranno ad appartenere a un numero di cerchi diverso, aventi colori diversi, che produrranno un colore finale del pixel diverso. Inoltre, l'appartenenza di un cerchio a un pixel (e viceversa) è una condizione che non dipende da nessun pixel all'infuori del pixel stesso.
 
-È quindi di fondamentale importanza notare che entrambe le operazioni si possono effettuare in modo **indipendente** su ognuno dei (canvas_size x canvas_size) pixel della superficie 2D, rendendo di fatto lo sviluppo di questo Image Renderer un problema *imbarazzantemente parallelo*, aprendo quindi le porte a una parallelizzazione promettente del codice.
-
-
-
-Presentazione del problema e riassunto breve dell'approccio, menzionando i vantaggi ottenibili tramite l'utilizzo di OpenMP.
+È quindi di fondamentale importanza notare che entrambe le operazioni si possono effettuare in modo **indipendente** su ognuno dei (canvas_size x canvas_size) pixel della superficie 2D, rendendo di fatto lo sviluppo di questo Image Renderer un problema *imbarazzantemente parallelo*, aprendo quindi le porte a una parallelizzazione promettente del codice con OpenMP.
 
 ### 2.1 - Hardware and Software setup
+
 Hardware; versione di OpenMP e di C++; studio rapido del CMake.
 
-### 2.2 - Hyperparameters
+### 2.2 - Structures and Hyperparameters
+
+Oltre al file main.cppl progetto si compone di un file renderer.cpp che, compreso di header, contiene tutti i metodi necessari all'esecuzione delle operazioni, oltre ai metodi 
+
 Valori di range del raggio dei cerchi, valori di alpha blending, ampiezza del canvas, numero di cerchi creati.
 
 ### 2.3 - Sequential implementation
@@ -78,7 +78,13 @@ Serie di plot
 
 #### 3.3.1 - Effect of the block size
 
-### 3.4 - Using collapse(2)
+### 3.4 - Using the collapse(2) clause
 
 ## 4 - Conclusion
-recap totale molto rapido dell'esperienza, menzionando la configurazione di iperparametri migliore, e la configurazione di direttiva+clausole migliore per questo problema.
+
+Un semplice Image Renderer è stato implementato in una versione sequenziale, e una parallela sfruttando le funzionalità di OpenMP. Test quantitativi delle performance in termini di speedup ed efficiency hanno provato che la parallelizzazione del codice utilizzando le direttive di OpenMP hanno nettamente migliorato le performance di esecuzione.
+La migliore combinazione di direttive e clausole è risultata essere
+
+DIRETTIVA, PARTE DI CODICE
+
+avendo prodotto uno speedup di ... e un'efficiency di ...
