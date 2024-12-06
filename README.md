@@ -20,7 +20,7 @@ Ogni cerchio creato è dotato di 6 attributi:
 
 La coordinata z, indicante le "profondità" nello spazio 3D, di fatto è un indicatore delle distanze di tali cerchi dalla superficie 2D su cui verranno proiettati, e pertanto consente di definire un ordine spaziale, a livelli, di proiezione. Ricavare correttamente l'ordinamento dei cerchi è di fondamentale importanza per la riusci ta corretta dell'operazione di rendering, a causa del fatto che ogni cerchio è semi-trasparente, e quindi il colore di un cerchio non coprirà completamente il colore di un cerchio sottostante, ma avverrà un blending che produrrà un colore finale secondo la formula di *alpha blending*:
 
-$Value_{color} = (1 - α)Value_{color}^A + αValue_{color}^B$
+$$Value_{color} = (1 - α)Value_{color}^A + αValue_{color}^B$$
 
 where $`color = \{r,g,b\}`$, and $A$ and $B$ are two circles che dopo l'ordinamento sono in posizioni consecutive, rispettivamente più vicino e più lontano rispetto alla superficie 2D. Più semplicemente, considerando i cerchi come strati su un foglio, il cerchio $A$ si trova dietro, o sotto, al cerchio $B$.
 
@@ -88,7 +88,7 @@ Inizialmente viene effettuato l'ordinamento globale del vettore di cerchi, un'op
 
 Si raggiunge quindi una complessità totale di
 
-$`O(num\_circles * log(num\_circles) + canvas\_size * canvas\_size * num\_circles)`$.
+$$`O(num\_circles * log(num\_circles) + canvas\_size * canvas\_size * num\_circles)`$$.
 
 Per numeri realistici, la componente dominante sarà sempre quella dell'operazione di blending, poiché richiede molte più operazioni rispetto alla fase di ordinamento iniziale dei cerchi.
 
@@ -102,7 +102,7 @@ Tale operazione è infatti facilmente effettuabile in modo **indipendente** su c
 
 La complessità totale dell'*Image Renderer*, infatti, diventerebbe
 
-$`O(num\_circles * log(num\_circles) + (canvas\_size * canvas\_size * num\_circles)/(overhead*num\_threads))`$
+$$`O(num\_circles * log(num\_circles) + (canvas\_size * canvas\_size * num\_circles)/(overhead*num\_threads))`$$
 
 With `num_threads > 1`, e una piccola componente `overhead < 1` dovuta all'overhead per la creazione di multipli threads paralleli.
 
