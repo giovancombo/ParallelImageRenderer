@@ -24,15 +24,27 @@ $Value_{color} = (1 - α)Value_{color}^A + αValue_{color}^B$
 
 where $`color = \{r,g,b\}`$, and $A$ and $B$ are two circles che dopo l'ordinamento sono in posizioni consecutive, rispettivamente più vicino e più lontano rispetto alla superficie 2D. Più semplicemente, considerando i cerchi come strati su un foglio, il cerchio $A$ si trova dietro, o sotto, al cerchio $B$.
 
+<p float="center", align="center">
+  <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/blending.png" width="40%" />
+</p>
+
 Pertanto, al termine della creazione dei cerchi, è importante effettuare per ciascun pixel della superficie 2D l'ordinamento dei cerchi che si proietterebbero su tale pixel secondo il valore della coordinata z, e calcolare il colore finale del pixel secondo la logica dettata dal fenomeno di alpha blending.
 
 L'appartenenza di un certo cerchio a un pixel è dettata da una precisa regola: un cerchio avente centro di coordinate *(xc, yc)* appartiene al pixel di coordinate *(x, y)* se la distanza tra i due punti è inferiore al raggio del cerchio.
 
-FORMULA + IMMAGINE + CODICE
+<p float="center", align="center">
+  <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/pixelincircle.png" width="25%" />
+</p>
 
 Il risultato finale dell'*Image Renderer* è un'immagine di dimensione *(canvas_size x canvas_size)* di cerchi colorati semi-trasparenti sovrapposti tra loro.
 
-FIGURA CERCHI
+<p float="left", align="center">
+  <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/outputs/output_1024_1000.png" width="24%" />
+  <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/outputs/output_1024_10000.png" width="24%" />
+  <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/outputs/output_1024_50000.png" width="24%" />
+  <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/outputs/output_1024_100000.png" width="24%" />
+</p>
+<p align="center"><i>Immagini renderizzate con <b>1000</b>, <b>10000</b>, <b>50000</b> e <b>100000</b> cerchi su una superficie <b>(1024 x 1024)</b>.</i></p>
 
 Oltre alla corretta creazione di un'immagine nel rispetto delle regole di blending, il principale lo scopo del progetto è quello di produrre un'implementazione C++ del programma in versione sequenziale e parallela, sfruttando le funzionalità di computazione parallela della API di **OpenMP**. Si dovrà valutare quantitativamente l'effetto della parallelizzazione misurando metriche specifiche come **Speedup** ed **Efficiency**.
 
