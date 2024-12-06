@@ -1,8 +1,20 @@
 # Parallel Image Renderer in C++ with OpenMP
 
-Mid Term Assignment for the Parallel Programming for Machine Learning course, held by professor Marco Bertini at University of Florence, Italy.
+Mid Term Assignment for the Parallel Programming for Machine Learning course, held by professor Marco Bertini at University of Florence, Italy. Il report descrive lo sviluppo di un semplice Image Renderer in C++, e ne confronta quantitativamente l'implementazione sequenziale e parallela, mostrando le grandi potenzialità dell'utilizzo della computazione parallela tramite la API di OpenMP. Vengono effettuate misurazioni di speedup ed efficiency per differenti configurazioni d'ambiente, iperparametri, oltre a diverse combinazioni di direttive e clausole.
 
 ## 1 - Introduction
+In questo report verrà sviluppato un semplice Image Renderer, consistente nella generazione di un certo numero di cerchi nello spazio 3D a diversi livelli di profondità, e la loro proiezione su una superficie 2D rettangolare, a simulare una tela, avendo cura che venga rispettato l'ordine corretto di mistura dei colori per ogni pixel nel caso di cerchi sovrapposti tra loro. Per questo progetto, imponiamo che la superficie 2D abbia forma quadrata, di dimensione canvas_size.
+
+Ogni cerchio è dotato di 6 attributi:
+- Coordinate (x,y) nello spazio 2D: randomiche nell'intervallo [0, canvas_size]
+- Coordinata (z) indicante la profondità: randomica nell'intervallo [0, 1000]
+- Raggio (radius): randomico nell'intervallo [0, 50]
+- Colore (color): definito dalle componenti (r,g,b), randomiche nell'intervallo [0, 1]
+- Trasparenza (alpha): randomica nell'intervallo [0.1, 0.5]
+
+ 
+
+
 Logica dietro all'operazione di base dell'image renderer, menzionando brevemente le operazioni che potrebbero essere parallelizzabili: 2 operazioni = sorting in base alla z + processing del colore con alpha blending.
 
 ## 2 - Code
