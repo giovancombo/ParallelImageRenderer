@@ -2,7 +2,7 @@
 
 Mid Term Assignment for the *Parallel Programming for Machine Learning* course, held by professor Marco Bertini at University of Florence, Italy.
 
-Il report descrive lo sviluppo di un semplice Image Renderer in C++, e ne confronta quantitativamente l'implementazione sequenziale e parallela, mostrando le grandi potenzialità dell'utilizzo della computazione parallela tramite la API di OpenMP. Vengono effettuate misurazioni di speedup ed efficiency per differenti configurazioni d'ambiente, iperparametri, oltre a diverse combinazioni di direttive e clausole.
+Il report descrive lo sviluppo di un semplice Image Renderer in C++, e ne confronta quantitativamente l'implementazione sequenziale e parallela, mostrando le grandi potenzialità dell'utilizzo della computazione parallela e multithread tramite l'uso della API di OpenMP. Vengono effettuate misurazioni di speedup ed efficiency per differenti configurazioni d'ambiente, iperparametri, oltre a diverse combinazioni di direttive e clausole.
 
 
 ## 1 - Introduction
@@ -26,11 +26,26 @@ L'appartenenza di un certo cerchio a un pixel è dettata da una precisa regola: 
 
 FORMULA + IMMAGINE + CODICE
 
-Sostanzialmente, questo Image Renderer si compone di due operazioni principali:
+Il risultato finale dell'Image Renderer è un'immagine di dimensione (canvas_size x canvas_size) di cerchi colorati sovrapposti, come mostrato in figura.
 
-Logica dietro all'operazione di base dell'image renderer, menzionando brevemente le operazioni che potrebbero essere parallelizzabili: 2 operazioni = sorting in base alla z + processing del colore con alpha blending.
+FIGURA CERCHI
 
-## 2 - Code
+Oltre alla corretta creazione di un'immagine nel rispetto delle regole di blending, il principale lo scopo del progetto è quello di produrre un'implementazione C++ del programma in versione sequenziale e parallela, sfruttando le funzionalità di computazione parallela della API di OpenMP. Si dovrà valutare quantitativamente l'effetto della parallelizzazione misurando metriche specifiche come **Speedup** ed **Efficiency**.
+
+
+## 2 - Method and Code
+
+Dal punto di vista strettamente operativo, un Image Renderer così come descritto nella sezione 1 prevede, di fatto, l'esecuzione di due operazioni principali:
+
+1) *sorting* dei cerchi rispetto alla propria distanza dalla superficie 2D, indicata dalla propria coordinata z;
+2) applicazione della formula di alpha blending per ricavare la corretta distribuzione finale dei colori.
+
+Dato che la disposizione dei cerchi nello spazio è randomica, è chiaro che, in fase di proiezione sulla superficie 2D, pixel diversi della superficie si troveranno ad appartenere a un numero di cerchi diverso, aventi colori diversi, che produrranno un colore finale del pixel diverso. Inoltre, l'appartenenza di un cerchio a un pixel (e viceversa) è una condizione che non dipende da nessun pixel all'infuori del pixel stesso.
+
+È quindi di fondamentale importanza notare che entrambe le operazioni si possono effettuare in modo **indipendente** su ognuno dei (canvas_size x canvas_size) pixel della superficie 2D, rendendo di fatto lo sviluppo di questo Image Renderer un problema *imbarazzantemente parallelo*, aprendo quindi le porte a una parallelizzazione promettente del codice.
+
+
+
 Presentazione del problema e riassunto breve dell'approccio, menzionando i vantaggi ottenibili tramite l'utilizzo di OpenMP.
 
 ### 2.1 - Hardware and Software setup
