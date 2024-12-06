@@ -48,16 +48,39 @@ Dato che la disposizione dei cerchi nello spazio è randomica, è chiaro che, in
 
 Hardware; versione di OpenMP e di C++; studio rapido del CMake.
 
-### 2.2 - Structures and Hyperparameters
+### 2.2 - Code general structure
 
-Oltre al file main.cppl progetto si compone di un file renderer.cpp che, compreso di header, contiene tutti i metodi necessari all'esecuzione delle operazioni, oltre ai metodi 
+Il progetto si basa su una classe principale **Renderer**, che rappresenta il nucleo dell'implementazione. Qui sono gestite tutte le operazioni necessarie per il rendering dei cerchi. La classe mantiene le dimensioni della superficie 2D, definita *canvas* (width e height), una collezione di cerchi da renderizzare memorizzata in un *vector*, e il canvas stesso implementato come array lineare di pixel, dove ogni pixel è rappresentato da un oggetto Color che ne definisce i valori RGB.
 
-Valori di range del raggio dei cerchi, valori di alpha blending, ampiezza del canvas, numero di cerchi creati.
+A livello operazionale, la classe implementa tre metodi privati fondamentali: *processPixel*, che calcola il colore finale di un pixel considerando tutti i cerchi che lo contengono, *isPixelInCircle*, che determina se un punto appartiene a un cerchio basandosi sulla distanza euclidea dal centro, e *alphaBlending*, che gestisce la composizione di due colori considerando l'effetto dovuto alla trasparenza dei cerchi.
+
+L'interfaccia pubblica della classe include, oltre al costruttore che inizializza il canvas e al distruttore che ne libera la memoria, il metodo *addCircle* per aggiungere nuovi cerchi alla scena, e i due metodi principali *renderSequential* e *renderParallel* che implementano rispettivamente la versione sequenziale e parallela del programma.
+
+Gli output di questi ultimi metodi sono due struct, rispettivamente SequentialResult e ParallelResult, contenenti ciascuna i dati e le misurazioni essenziali per la caratterizzazione quantitativa di ogni singola run.
+
+Nel file main.cpp è possibile definire diverse costanti, espresse sotto forma di vector in modo da rendere possibili multiple combinazioni nella stessa run:
+- CANVAS_SIZES = dimensione della superficie 2D: {256, 512, 1024, 2048}
+- NUM_CIRCLES = numero di cerchi creati: {1000, 2000, 5000, 10000, 15000, 20000, 50000, 100000}
+- NUM_THREADS = numero di threads creati in fase di fork: {2, 3, 4, 6, 8, 12, 16, 24, 32, 64}
+- BLOCK_SIZES = numero di blocchi/chunk per lo scheduling: {12, 16, 24, 32, 64}
 
 ### 2.3 - Sequential implementation
-Elenco degli svantaggi dell'implementazione sequenziale, dei punti deboli che causano rallentamenti; complessità operazionale con l'O grande.
+
+L'implementazione sequenziale dell'Image Renderer si configura nel metodo *renderSequential*. Inizialmente effettua l'ordinamento globale del vettore di cerchi, un'operazione di complessità O(num_circles . log(num_circles)). In seguito effettua, tramite due for loop innestati, il processing uno ad uno di ciascun pixel della superficie 2D, consistente nel calcolo sequenziale del colore finale assunto dal pixel, seguendo la formula di alpha blending. La complessità di tale operazione è O(canvas_size . canvas_size . num_circles), in quanto ogni pixel richiede un controllo su tutti i cerchi per verificarne l'appartenenza al pixel.
+
+Si raggiunge quindi una complessità totale di O(num_circles . log(num_circles) + canvas_size . canvas_size . num_circles). Per numeri realistici, la componente dominante sarà sempre quella dell'operazione di blending, poiché richiede molte più operazioni rispetto alla fase di ordinamento iniziale dei cerchi.
 
 ### 2.4 - Parallel implementation
+
+L'implementazione parallela dell'Image Renderer si configura nel metodo *renderParallel*. 
+
+Se la complessità dell'algoritmo di sorting è la medesima di quella dell'implementazione sequenziale, in quanto esso viene applicato a livello globale, l'operazione di blending dei colori è il vero collo di bottiglia dell'implementazione sequenziale, e quindi quella su cui è possibile migliorare le performance del programma.
+
+Tale operazione è infatti facilmente effettuabile in modo **indipendente** su ciascun pixel della superficie 2D, e quindi è possibile sfruttare le direttive di OpenMP per garantire l'esecuzione di tale operazione su più pixel su num_threads threads simultaneamente, abbattendo quindi l'Execution Time totale.
+
+La complessità totale dell'Image Renderer, infatti, diventerebbe O(num_circles . log(num_circles) + (canvas_size . canvas_size . num_circles)/(overhead*num_threads)), con num_threads > 1, e una piccola componente overhead < 1 dovuta all'overhead per la creazione di multipli threads paralleli.
+
+
 Presentazione iniziale delle aspettative che ho riguardo l'implementazione parallela, ovvero lo speedup.
 Poi, implementazione passo passo di clausole diverse partendo dalla direttiva base.
 1. parallel + for
