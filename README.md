@@ -118,6 +118,8 @@ Poi, implementazione passo passo di clausole diverse partendo dalla direttiva ba
 5. parallel for num_threads(num_threads) schedule(static/dynamic, block_size)
 6. parallel for collapse(2) num_threads(num_threads) schedule(static/dynamic, block_size)
 
+#### 2.4.1 - Addressing False Sharing
+
 ## 3 - Tests and Results
 Serie di plot
 
