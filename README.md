@@ -88,7 +88,7 @@ Inizialmente viene effettuato l'ordinamento globale del vettore di cerchi, un'op
 
 Si raggiunge quindi una complessità totale di
 
-$$`O(num\_circles * log(num\_circles) + canvas\_size * canvas\_size * num\_circles)`$$.
+$`O(num\_circles * log(num\_circles) + canvas\_size * canvas\_size * num\_circles)`$
 
 Per numeri realistici, la componente dominante sarà sempre quella dell'operazione di blending, poiché richiede molte più operazioni rispetto alla fase di ordinamento iniziale dei cerchi.
 
