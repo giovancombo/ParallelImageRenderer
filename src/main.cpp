@@ -13,9 +13,6 @@ int main() {
     vector<int> NUM_CIRCLES = {1000, 5000, 10000, 20000, 50000, 100000};
     vector<int> BLOCK_SIZES = {16, 24, 32};
 
-    ofstream csv_results("results.csv");
-    csv_results << "canvasSize,numCircles,numThreads,blockSize,seqSortingTime,seqRenderTime,seqExecutionTime,parSortingTime,parRenderTime,parExecutionTime,speedup,efficiency\n";
-
     for(auto canvas_size : CANVAS_SIZES) {
         for(auto num_circles : NUM_CIRCLES) {
             Renderer renderer(canvas_size, canvas_size);
@@ -37,25 +34,10 @@ int main() {
             }
 
             SequentialResult seqResult = renderer.renderSequential();
-            // string filename = "output_" + to_string(canvas_size) + "_" + to_string(num_circles) + ".ppm";
-            // renderer.saveToPPM(filename);
 
             for(auto num_threads : NUM_THREADS) {
                 for(auto block_size : BLOCK_SIZES) {
                     ParallelResult parResult = renderer.renderParallel(num_threads, block_size, seqResult.seqExecutionTime);
-
-                    csv_results << canvas_size << ","
-                            << num_circles << ","
-                            << parResult.numThreads << ","
-                            << parResult.blockSize << ","
-                            << seqResult.seqSortingTime << ","
-                            << seqResult.seqRenderTime << ","
-                            << seqResult.seqExecutionTime << ","
-                            << parResult.parSortingTime << ","
-                            << parResult.parRenderTime << ","
-                            << parResult.parExecutionTime << ","
-                            << parResult.speedup << ","
-                            << parResult.efficiency << "\n";
 
                     cout << "\nCanvas: " << canvas_size << "x" << canvas_size
                          << ", Circles: " << num_circles
