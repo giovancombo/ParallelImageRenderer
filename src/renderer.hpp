@@ -49,7 +49,6 @@ class Renderer {
         Renderer(int width, int height);
         ~Renderer();
         void addCircle(const Circle& circle);
-        void saveToPPM(const std::string& filename);
 
         SequentialResult renderSequential();
         ParallelResult renderParallel(int num_threads, int block_size, float seq_execution_time);
