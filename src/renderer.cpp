@@ -7,7 +7,8 @@
 using namespace std;
 
 Renderer::Renderer(int w, int h) : width(w), height(h) {
-    canvas = new Color[width * height];         // canvas = new PaddedColor[width * height];    to address False Sharing
+    canvas = new Color[width * height];
+    // canvas = new PaddedColor[width * height];    to address False Sharing
     for(int i = 0; i < width * height; i++) {
         canvas[i] = Color(1.0f, 1.0f, 1.0f);
         // canvas[i].r = 1.0f;
@@ -32,12 +33,12 @@ Color Renderer::alphaBlending(const Color& source, const Color& dest, float alph
     return Color(
             source.r * alpha + dest.r * (1 - alpha),
             source.g * alpha + dest.g * (1 - alpha),
-            source.b * alpha + dest.b * (1 - alpha)
-            );
+            source.b * alpha + dest.b * (1 - alpha));
 }
 
 void Renderer::processPixel(int x, int y) {
-    Color finalColor;       // Color finalColor(1.0f, 1.0f, 1.0f);      to address False Sharing
+    Color finalColor;
+    // Color finalColor(1.0f, 1.0f, 1.0f);      to address False Sharing
 
     for (const Circle& circle : circles) {
         if (isPixelInCircle(x, y, circle)) {
@@ -53,20 +54,6 @@ void Renderer::processPixel(int x, int y) {
 
 void Renderer::addCircle(const Circle& circle) {
     circles.push_back(circle);
-}
-
-void Renderer::saveToPPM(const string& filename) {
-    ofstream file(filename, ios::binary);
-    file << "P6\n" << width << " " << height << "\n255\n";
-
-    for(int i = 0; i < width * height; i++) {
-        unsigned char r = static_cast<unsigned char>(canvas[i].r * 255);
-        unsigned char g = static_cast<unsigned char>(canvas[i].g * 255);
-        unsigned char b = static_cast<unsigned char>(canvas[i].b * 255);
-        file.write(reinterpret_cast<char*>(&r), 1);
-        file.write(reinterpret_cast<char*>(&g), 1);
-        file.write(reinterpret_cast<char*>(&b), 1);
-    }
 }
 
 SequentialResult Renderer::renderSequential() {
