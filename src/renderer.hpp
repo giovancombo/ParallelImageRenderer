@@ -18,10 +18,8 @@ struct alignas(CACHE_LINE_LENGTH) PaddedColor {
 
 struct Circle {
     float x, y, z;
-    float radius;
+    float radius, alpha;
     Color color;
-    float alpha;
-
     Circle(float x = 0, float y = 0, float z = 0, float radius = 1, const Color& color = Color(), float alpha = 1.0f): x(x), y(y), z(z), radius(radius), color(color), alpha(alpha) {}
 };
 
@@ -31,8 +29,7 @@ struct SequentialResult {
 
 struct ParallelResult {
     float parSortingTime, parRenderTime, parExecutionTime;
-    int numThreads;
-    int blockSize;
+    int numThreads, blockSize;
     float speedup, efficiency;
 };
 
@@ -49,6 +46,7 @@ class Renderer {
         Renderer(int width, int height);
         ~Renderer();
         void addCircle(const Circle& circle);
+        void saveToPPM(const std::string& filename);
 
         SequentialResult renderSequential();
         ParallelResult renderParallel(int num_threads, int block_size, float seq_execution_time);
