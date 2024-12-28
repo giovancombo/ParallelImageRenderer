@@ -1,42 +1,41 @@
 # Parallel Image Renderer in C++ with OpenMP
 
-Mid Term Assignment for the *Parallel Programming for Machine Learning* course, held by professor Marco Bertini at University of Florence, Italy.
+Midterm Assignment for the *Parallel Programming for Machine Learning* course, taught by Professor Marco Bertini at the University of Florence, Italy.
 
-Il report descrive lo sviluppo di un semplice Image Renderer in C++, e ne confronta quantitativamente l'implementazione sequenziale e parallela, mostrando le grandi potenzialità dell'utilizzo della computazione parallela e multithread tramite l'uso della API di OpenMP. Vengono effettuate misurazioni di speedup ed efficiency per differenti configurazioni d'ambiente, iperparametri, oltre a diverse combinazioni di direttive e clausole.
+## Abstract
+*This report describes the development of a simple Image Renderer in C++ and quantitatively compares its sequential and parallel implementations. The analysis demonstrates the significant potential of parallel computing and multithreading using the OpenMP API. Performance measurements including speedup and efficiency are conducted across various environmental configurations, hyperparameters, and different combinations of directives and clauses.*
 
 <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/outputs/output_stretched2048_20000.png">
 
-
 ## 1 - Introduction
+This report presents the development of a simple *Image Renderer* that generates and projects 3D circles onto a 2D rectangular surface, simulating a canvas. The renderer handles overlapping circles by mixing their colors in a proper way, at different levels of depth. For simplicity, we constrain the 2D surface to be square, with dimensions *(canvas_size x canvas_size)*.
 
-In questo report verrà sviluppato un semplice *Image Renderer*, le cui operazioni consistono nella generazione di un certo numero di cerchi nello spazio 3D a diversi livelli di profondità, e la loro proiezione su una superficie 2D rettangolare, a simulare una tela, avendo cura che venga rispettato l'ordine corretto di mistura dei colori per ogni pixel nel caso di cerchi sovrapposti tra loro. Per questo progetto, imponiamo che la superficie 2D abbia forma quadrata, di dimensione *(canvas_size x canvas_size)*.
+Each generated circle has 6 attributes:
+- 2D coordinates (x, y): random values in the range [0, canvas_size]
+- Depth coordinate (z): random value in the range [0, 1000]
+- Radius: random value in the range [10, 50]
+- Color: struct defined by its (r,g,b) components, which are random values in range [0, 1]
+- Transparency (alpha): random value in the range [0.1, 0.5]
 
-Ogni cerchio creato è dotato di 6 attributi:
-- Coordinate (x, y) nello spazio 2D: randomiche nell'intervallo [0, canvas_size];
-- Coordinata (z) indicante la profondità: randomica nell'intervallo [0, 1000];
-- Raggio (radius): randomico nell'intervallo [0, 50];
-- Colore (Color): struct definita dalle componenti (r,g,b), randomiche nell'intervallo [0, 1];
-- Trasparenza (alpha): randomica nell'intervallo [0.1, 0.5].
-
-La coordinata z, indicante le "profondità" nello spazio 3D, di fatto è un indicatore delle distanze di tali cerchi dalla superficie 2D su cui verranno proiettati, e pertanto consente di definire un ordine spaziale, a livelli, di proiezione. Ricavare correttamente l'ordinamento dei cerchi è di fondamentale importanza per la riusci ta corretta dell'operazione di rendering, a causa del fatto che ogni cerchio è semi-trasparente, e quindi il colore di un cerchio non coprirà completamente il colore di un cerchio sottostante, ma avverrà un blending che produrrà un colore finale secondo la formula di *alpha blending*:
+The z-coordinate, indicating the depth in the 3D space, represents the distance of circles from the 2D projection surface. This allows defining an ordering of projection levels, which will be the basis for getting a coherent rendering. Determining the correct circle ordering is crucial for a successful rendering, as each circle is semi-transparent. Therefore, a circle's color won't completely cover the color of an underlying circle. Instead, *color blending* occurs according to the *alpha blending* formula:
 
 $$Value_{color} = (1 - α)Value_{color}^A + αValue_{color}^B$$
 
-where $`color = \{r,g,b\}`$, and $A$ and $B$ are two circles che dopo l'ordinamento sono in posizioni consecutive, rispettivamente più vicino e più lontano rispetto alla superficie 2D. Più semplicemente, considerando i cerchi come strati su un foglio, il cerchio $A$ si trova dietro, o sotto, al cerchio $B$.
+where $`color = \{r,g,b\}`$, and $A$ and $B$ are two consecutive circles after ordering, with $A$ being closer to the 2D surface than $B$.
 
 <p float="center", align="center">
   <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/blending.png" width="40%" />
 </p>
 
-Pertanto, al termine della creazione dei cerchi, è importante effettuare per ciascun pixel della superficie 2D l'ordinamento dei cerchi che si proietterebbero su tale pixel secondo il valore della coordinata z, e calcolare il colore finale del pixel secondo la logica dettata dal fenomeno di alpha blending.
+So, after creating the circles, it's essential to perform two key operations **for each pixel** on the 2D surface: first, ordering the circles that would project onto that pixel according to their z-coordinate, and then calculating the pixel's final color following the alpha blending logic.
 
-L'appartenenza di un certo cerchio a un pixel è dettata da una precisa regola: un cerchio avente centro di coordinate *(xc, yc)* appartiene al pixel di coordinate *(x, y)* se la distanza tra i due punti è inferiore al raggio del cerchio.
+A circle with center coordinates *(xc, yc)* belongs to a pixel with coordinates *(x, y)* if the distance between these two points is less than the circle's radius.
 
 <p float="center", align="center">
   <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/pixelincircle.png" width="25%" />
 </p>
 
-Il risultato finale dell'*Image Renderer* è un'immagine di dimensione *(canvas_size x canvas_size)* di cerchi colorati semi-trasparenti sovrapposti tra loro.
+The final output of the *Image Renderer* is a *(canvas_size x canvas_size)* image showing semi-transparent colored circles, which are overlapping each other.
 
 <p float="left", align="center">
   <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/outputs/output_1024_1000.png" width="24%" />
@@ -46,51 +45,52 @@ Il risultato finale dell'*Image Renderer* è un'immagine di dimensione *(canvas_
 </p>
 <p align="center"><i>Immagini renderizzate con <b>1000</b>, <b>10000</b>, <b>50000</b> e <b>100000</b> cerchi su una superficie <b>(1024 x 1024)</b>.</i></p>
 
-Oltre alla corretta creazione di un'immagine nel rispetto delle regole di blending, il principale lo scopo del progetto è quello di produrre un'implementazione C++ del programma in versione sequenziale e parallela, sfruttando le funzionalità di computazione parallela della API di **OpenMP**. Si dovrà valutare quantitativamente l'effetto della parallelizzazione misurando metriche specifiche come **Speedup** ed **Efficiency**.
-
+Beyond correctly generating images that respect blending rules, the main goal of this project is to develop both sequential and parallel C++ implementations of the program, leveraging **OpenMP**'s parallel computing capabilities. We will quantitatively evaluate the effect of parallelization by measuring specific metrics such as *speedup* and *efficiency*.
 
 ## 2 - Method and Code
+From an operational perspective, an *Image Renderer* as described in Section 1 essentially performs two main operations:
 
-Dal punto di vista strettamente operativo, un *Image Renderer* così come descritto nella sezione 1 prevede, di fatto, l'esecuzione di due operazioni principali:
+1) *sorting* circles based on their distance from the 2D surface, indicated by their z-coordinate;
+2) *alpha blending* on individual pixels to determine the final color distribution.
 
-1) *sorting* dei cerchi rispetto alla propria distanza dalla superficie 2D, indicata dalla propria coordinata z;
-2) *alpha blending* sui singoli pixel, per ricavare la corretta distribuzione finale dei colori.
+Since circles are randomly positioned in space, different pixels on the 2D surface will belong to different numbers of circles with different colors, resulting in varying final pixel colors. Importantly, whether a circle belongs to a pixel (and vice versa) is a condition that depends **solely** on that pixel.
 
-Dato che la disposizione dei cerchi nello spazio è randomica, è chiaro che, in fase di proiezione sulla superficie 2D, pixel diversi della superficie si troveranno ad appartenere a un numero di cerchi diverso, aventi colori diversi, che produrranno un colore finale del pixel diverso. Inoltre, l'appartenenza di un cerchio a un pixel (e viceversa) è una condizione che non dipende da nessun pixel all'infuori del pixel stesso.
-
-È quindi di fondamentale importanza notare che entrambe le operazioni si possono effettuare in modo **indipendente** su ognuno dei $`canvas\_size^2`$ pixel della superficie 2D, rendendo di fatto lo sviluppo di questo *Image Renderer* un problema *imbarazzantemente parallelo*, garantendo una parallelizzazione promettente del codice con OpenMP.
+It's then crucial to note that both operations can be performed **independently** on each of the $`canvas\_size^2`$ pixels of the 2D surface, making this *Image Renderer* an *embarrassingly parallel* problem. This characteristic promises effective code parallelization with OpenMP.
 
 ### 2.1 - Hardware and Software setup
-
-Hardware; versione di OpenMP e di C++; studio rapido del CMake.
+[Section to be completed with hardware specifications, OpenMP and C++ versions, and a brief CMake study]
 
 ### 2.2 - Code general structure
+The project is built around a main **`Renderer`** class, which is the core of the implementation. This class manages all the operations for circle rendering. It defines the 2D surface (named "canvas") through its dimensions (for simplicity, `width = height = canvas_size`), a collection of circles to render stored in a vector, and the canvas itself implemented as a linear array of pixels, where each pixel is represented by a `Color` object, which defines its RGB values.
 
-Il progetto si basa su una classe principale **`Renderer`**, che rappresenta il nucleo dell'implementazione. Qui sono gestite tutte le operazioni necessarie per il rendering dei cerchi. La classe mantiene le dimensioni della superficie 2D, definita *canvas* (con, per semplicità, `width = height = canvas_size`), una collezione di cerchi da renderizzare memorizzata in un *vector*, e il canvas stesso implementato come array lineare di pixel, dove ogni pixel è rappresentato da un oggetto `Color` che ne definisce i valori RGB.
+Operationally, the class implements three fundamental private methods: `isPixelInCircle`, which determines if a point belongs to a circle, `processPixel`, which calculates a pixel's final color considering all circles containing it, and `alphaBlending`, which handles color composition considering circle transparency effects.
 
-A livello operazionale, la classe implementa tre metodi privati fondamentali: `processPixel`, che calcola il colore finale di un pixel considerando tutti i cerchi che lo contengono, `isPixelInCircle`, che determina se un punto appartiene a un cerchio, e `alphaBlending`, che gestisce la composizione di due colori considerando l'effetto dovuto alla trasparenza dei cerchi.
+The class' public interface includes the two methods `renderSequential` and `renderParallel` that implement the sequential and parallel versions of the program respectively.
 
-L'interfaccia pubblica della classe include, oltre al costruttore che inizializza il canvas e al distruttore che ne libera la memoria, i due metodi `renderSequential` e `renderParallel` che implementano rispettivamente la versione sequenziale e parallela del programma.
+The outputs of these methods are two structs, `SequentialResult` and `ParallelResult`, containing essential data and measurements for quantitative characterization of each run.
 
-Gli output di questi ultimi metodi sono due struct, rispettivamente `SequentialResult` e `ParallelResult`, contenenti ciascuna i dati e le misurazioni essenziali per la caratterizzazione quantitativa di ogni singola run.
+The `main.cpp` file allows defining several constants, to enable multiple combinations in the same run:
+- `CANVAS_SIZES`: 2D surface dimensions {256, 512, 1024}
+- `NUM_CIRCLES`: number of generated circles {1000, 5000, 10000, 20000, 50000, 100000}
+- `NUM_THREADS`: number of threads created during fork {2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64}
+- `BLOCK_SIZES`: number of blocks/chunks for scheduling {16, 24, 32}
 
-Nel file `main.cpp` è possibile definire diverse costanti, espresse sotto forma di vector in modo da rendere possibili multiple combinazioni nella stessa run:
-- `CANVAS_SIZES` = dimensione della superficie 2D: {256, 512, 1024, 2048}
-- `NUM_CIRCLES` = numero di cerchi creati: {1000, 2000, 5000, 10000, 15000, 20000, 50000, 100000}
-- `NUM_THREADS` = numero di threads creati in fase di fork: {2, 3, 4, 6, 8, 12, 16, 24, 32, 64}
-- `BLOCK_SIZES` = numero di blocchi/chunk per lo scheduling: {12, 16, 24, 32, 64}
+### 2.3 - Sequential Implementation
+The sequential implementation lies in the `renderSequential` method. The process consists of two main steps:
 
-### 2.3 - Sequential implementation
+1. **Global Circle Sorting**: 
+   - Sorts all circles by their z-coordinate in descending order
+   - Uses the standard C++ `sort` algorithm
+   - Complexity: $`O(num\_circles * log(num\_circles))`$
 
-L'implementazione sequenziale dell'*Image Renderer* si configura nel metodo `renderSequential`.
+1. **Pixel Processing**:
+   - Nested loops iterate over each pixel (x, y) in the canvas
+   - For each pixel, checks if the pixel lies within the circle using Euclidean distance, and then applies alpha blending for overlapping circles
+   - Complexity: $`O(canvas\_size^2 * num\_circles)`$
 
-Inizialmente viene effettuato l'ordinamento globale del vettore di cerchi, un'operazione di complessità $`O(num\_circles*log(num\_circles))`$. In seguito effettua, tramite due for loop innestati, il processing uno ad uno di ciascun pixel della superficie 2D, consistente nel calcolo sequenziale del colore finale assunto dal pixel, seguendo la formula di alpha blending. La complessità di tale operazione è $`O(canvas\_size * canvas\_size * num\_circles)`$, in quanto ogni pixel richiede un controllo su tutti i cerchi per verificarne l'appartenenza al pixel.
+The total complexity is therefore: $`O(num\_circles * log(num\_circles) + canvas\_size^2 * num\_circles)`$
 
-Si raggiunge quindi una complessità totale di
-
-$`O(num\_circles * log(num\_circles) + canvas\_size * canvas\_size * num\_circles)`$
-
-Per numeri realistici, la componente dominante sarà sempre quella dell'operazione di blending, poiché richiede molte più operazioni rispetto alla fase di ordinamento iniziale dei cerchi.
+For realistic scenarios, the pixel processing phase dominates the execution time due to its higher complexity and the intensive floating-point operations required for color blending.
 
 ### 2.4 - Parallel implementation
 
@@ -108,32 +108,61 @@ With `num_threads > 1`, e una piccola componente `overhead < 1` dovuta all'overh
 
 La strategia di parallelizzazione prevede dunque di agire sul for loop innestato, nel quale avviene l'operazione di processing indipendente dei pixel, applicando per prima cosa la direttiva base `#pragma omp parallel for` fuori dal for loop esterno. In questo modo, l'operazione di *fork* e conseguente creazione dei threads avviene una sola volta, risultando in un quantitativo accettabile di overhead. Applicare la direttiva solamente al for loop interno avrebbe portato a un'operazione di *fork-join* ripetuta per ogni singola riga della superficie 2D, risultando in una gestione fortemente impattante dell'overhead di parallelizzazione, dovuto alla continua creazione e distruzione dei threads. Per fini puramente dimostrativi, ho valutato entrambi gli approcci.
 
-PLOT
 
-Poi, implementazione passo passo di clausole diverse partendo dalla direttiva base.
-1. parallel + for
-2. parallel for inner loop
-3. parallel for outer loop
-4. parallel for num_threads(num_threads)
-5. parallel for num_threads(num_threads) schedule(static/dynamic, block_size)
-6. parallel for collapse(2) num_threads(num_threads) schedule(static/dynamic, block_size)
+### 2.4 - Parallel Implementation
+The parallel implementation is built upon the sequential version, maintaining the same initial sorting phase while focusing on parallelizing the pixel processing phase, which is the most computationally intensive phase of the algorithm, and represents a bottleneck in the sequential implementation.
 
-#### 2.4.1 - Addressing False Sharing
+By placing a simple `#pragma omp parallel` directive before the nested loops and `#pragma omp for` at the *outer* loop level, work can be easily distributed among a team of threads, in a number that is automatically decided. This initial implementation provides a baseline for parallel performance.
 
-## 3 - Tests and Results
-Serie di plot
+**PLOT PARALLEL + FOR vs SEQUENTIAL**
 
-### 3.1 - Number of Threads
+These two directives were then merged into the combined `#pragma omp parallel for` construct, which provides a more concise and potentially more efficient implementation. This refinement eliminates potential overhead from separate parallel region creation and work distribution directives.
 
-### 3.2 - Number of circles
+**PLOT PARALLEL + FOR vs PARALLEL FOR vs SEQUENTIAL**
 
-### 3.3 - Type of scheduling
+To investigate the impact of the number of forked threads on the general performance, the `num_threads` clause was introduced. This addition allows control over the number of parallel threads, enabling to study how the program scales with different thread counts and to identify potential bottlenecks in the parallelization strategy.
 
-#### 3.3.1 - Effect of the block size
+Having two nested for loops at the pixel processing level, another interesting clause that could be evaluated was the `collapse(2)` clause, which merges the two nested loops into a single parallel region, potentially providing better load balancing and work distribution among threads.
 
-### 3.4 - Using the collapse(2) clause
+The final optimization phase explored different scheduling strategies and their impact on performance. OpenMP provides various scheduling options, including `static` and `dynamic` approaches, each with its own `block_size` parameter. This exploration aims to find the optimal balance between work distribution overhead and effective parallel execution.
 
-## 4 - Conclusion
+## 3 - Performance Analysis and Results
+
+### 3.1 - Basic Parallel Implementation Results
+- Comparison between separate and combined parallel directives
+- Analysis of overhead costs
+- Initial speedup measurements
+
+### 3.2 - Thread Scaling Analysis
+- Performance scaling with different thread counts
+- Identification of optimal thread count
+- Discussion of potential bottlenecks and their impact
+
+### 3.3 - Loop Collapse Impact
+- Effect of collapse clause on performance
+- Analysis of workload distribution
+- Comparison with non-collapsed implementation
+
+### 3.4 - Scheduling Strategy Evaluation
+- Comparison of static vs dynamic scheduling
+- Impact of different block sizes
+- Analysis of load balancing effectiveness
+
+### 3.5 - Combined Optimization Effects
+- Interaction between different optimization techniques
+- Identification of optimal configuration
+- Discussion of trade-offs between different approaches
+
+### 3.6 - False Sharing Analysis
+- Identification of false sharing issues
+- Implementation of padding solution
+- Performance impact of cache line optimization
+
+## 4 - Conclusions and Future Work
+- Summary of key findings
+- Optimal configuration recommendations
+- Potential areas for further optimization
+- Lessons learned and best practices
 
 Un semplice *Image Renderer* è stato implementato in una versione sequenziale, e una parallela sfruttando le funzionalità di OpenMP. Test quantitativi delle performance in termini di speedup ed efficiency hanno provato che la parallelizzazione del codice utilizzando le direttive di OpenMP hanno nettamente migliorato le performance di esecuzione.
 La migliore combinazione di direttive e clausole è risultata essere
