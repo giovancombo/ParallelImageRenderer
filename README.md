@@ -26,6 +26,8 @@ where $`color = \{r,g,b\}`$, and $A$ and $B$ are two consecutive circles after o
 <p float="center", align="center">
   <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/blending.png" width="40%" />
 </p>
+<p align="center"><b>Figure 1</b> <i>Representation of the application of alpha blending.</i></p>
+
 
 So, after creating the circles, it's essential to perform two key operations **for each pixel** on the 2D surface: first, ordering the circles that would project onto that pixel according to their z-coordinate, and then calculating the pixel's final color following the alpha blending logic.
 
@@ -34,6 +36,7 @@ A circle with center coordinates *(xc, yc)* belongs to a pixel with coordinates 
 <p float="center", align="center">
   <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/pixelincircle.png" width="25%" />
 </p>
+<p align="center"><b>Figure 2</b> <i>Representation of the rule for determining whether a pixel belongs to a circle.</i></p>
 
 The final output of the *Image Renderer* is a *(canvas_size x canvas_size)* image showing semi-transparent colored circles, which are overlapping each other.
 
@@ -43,7 +46,7 @@ The final output of the *Image Renderer* is a *(canvas_size x canvas_size)* imag
   <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/outputs/output_1024_50000.png" width="24%" />
   <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/outputs/output_1024_100000.png" width="24%" />
 </p>
-<p align="center"><i>Immagini renderizzate con <b>1000</b>, <b>10000</b>, <b>50000</b> e <b>100000</b> cerchi su una superficie <b>(1024 x 1024)</b>.</i></p>
+<p align="center"><b>Figure 3</b> <i>Rendering of 1000, 10000, 50000 and 100000 circles projected on a (1024 x 1024) canvas.</i></p>
 
 Beyond correctly generating images that respect blending rules, the main goal of this project is to develop both sequential and parallel C++ implementations of the program, leveraging **OpenMP**'s parallel computing capabilities. We will quantitatively evaluate the effect of parallelization by measuring specific metrics such as *speedup* and *efficiency*.
 
@@ -93,7 +96,6 @@ The total complexity is therefore: $`O(num\_circles * log(num\_circles) + canvas
 For realistic scenarios, the pixel processing phase dominates the execution time due to its higher complexity and the intensive floating-point operations required for color blending.
 
 ### 2.4 - Parallel implementation
-
 The parallel implementation of the Image Renderer is implemented in the *renderParallel* method. 
 
 While the sorting algorithm's complexity remains the same as in the sequential implementation, as it is applied globally, the color blending operation represents the true bottleneck of the sequential implementation. Therefore, this operation presents the main opportunity for improving program performance.
@@ -106,11 +108,11 @@ where `num_threads > 1`, and a small component `overhead < 1` accounts for the o
 
 By placing a simple `#pragma omp parallel` directive before the nested loops and `#pragma omp for` at the *outer* loop level, work can be easily distributed among a team of threads, in a number that is automatically decided. This initial implementation provides a baseline for parallel performance.
 
-**PLOT PARALLEL + FOR vs SEQUENTIAL**
+**CODICE PARALLEL + FOR vs SEQUENTIAL**
 
 These two directives were then merged into the combined `#pragma omp parallel for` construct, which provides a more concise and potentially more efficient implementation. This refinement eliminates potential overhead from separate parallel region creation and work distribution directives.
 
-**PLOT PARALLEL + FOR vs PARALLEL FOR vs SEQUENTIAL**
+**CODICE PARALLEL + FOR vs PARALLEL FOR vs SEQUENTIAL**
 
 To investigate the impact of the number of forked threads on the general performance, the `num_threads` clause was introduced. This addition allows control over the number of parallel threads, enabling to study how the program scales with different thread counts and to identify potential bottlenecks in the parallelization strategy.
 
@@ -120,6 +122,11 @@ The final optimization phase explored different scheduling strategies and their 
 
 ## 3 - Performance Analysis and Results
 
+<p float="left", align="center">
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_vs_circles.png" width="60%" />
+</p>
+<p align="center"><b>Figure 4</b> <i>Execution times for rendering canvas with different numbers of circles.</i></p>
+
 ### 3.1 - Thread Scaling Analysis
 - Comparison between separate and combined parallel directives
 - Analysis of overhead costs
@@ -128,22 +135,28 @@ The final optimization phase explored different scheduling strategies and their 
 - Identification of optimal thread count
 - Discussion of potential bottlenecks and their impact
 
-### 3.2 - Loop Collapse Impact
+<p float="left", align="center">
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/implementations_comparison_circles2000.png" width="70%" />
+</p>
+<p float="left", align="center">
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/implementations_comparison_circles50000.png" width="70%" />
+</p>
+<p align="center"><b>Figure 5a</b> <i>Rendering of 1000, 10000, 50000 and 100000 circles projected on a (1024 x 1024) canvas.</i></p>
+
+<p float="left", align="center">
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_implementations_circles2000.png" width="70%" />
+</p>
+<p float="left", align="center">
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_implementations_circles50000.png" width="70%" />
+</p>
+<p align="center"><b>Figure 5b</b> <i>Rendering of 1000, 10000, 50000 and 100000 circles projected on a (1024 x 1024) canvas.</i></p>
+
+#### Loop Collapse Impact
 - Effect of collapse clause on performance
 - Analysis of workload distribution
 - Comparison with non-collapsed implementation
 
-### 3.3 - Scheduling Strategy Evaluation
-- Comparison of static vs dynamic scheduling
-- Impact of different block sizes
-- Analysis of load balancing effectiveness
-
-1) Mie considerazioni: si può facilmente notare come, per qualunque numero fissato di cerchi, lo scheduling dinamico porti generalmente a speedup maggiori rispetto allo scheduling statico, con valori tra 0.5 e 1.5 più alti. Tuttavia, l'efficienza dello scheduling dinamico è solo di poco maggiore rispetto allo statico, ed evidentemente cala all'aumentare del numero di threads, rimanendo però sempre leggermente maggiore di quella dello statico.
-A prescindere dal tipo di scheduling, l'effetto di una diversa block_size è generalmente molto limitato, ad eccezione di alcuni casi particolari come lo scheduling dinamico con 2000 cerchi.
-
-3) Lo speedup maggiore nello scheduling dinamico porta evidentemente anche a execution times minori nello scheduling dinamico.
-
-### 3.4 - False Sharing Analysis
+#### False Sharing Analysis
 - Identification of false sharing issues
 - Implementation of padding solution
 - Performance impact of cache line optimization
@@ -151,6 +164,32 @@ A prescindere dal tipo di scheduling, l'effetto di una diversa block_size è gen
 2) Si può notare come contrastare il false sharing provoca in realtà un grande peggioramento in termini di execution time. Questo accade in quanto gli errori provocati dal false sharing sono molto trascurabili rispetto all'overhead che si crea in più per evitarlo. Si può notare infatti che le implementazioni che risolvono false sharing utilizzando cache line paddate a 32 o 64 byte hanno execution time addirittura superiori all'implementazione base con direttiva nell'inner loop, ovvero una implementazione effettuata con una messa in pratica scorretta delle direttive parallel.
 
 4) E' poi chiaro che all'aumentare del numero di cerchi generati, l'execution time totale aumenta sensibilmente.
+
+### 3.2 - Scheduling Strategy Evaluation
+- Comparison of static vs dynamic scheduling
+- Impact of different block sizes
+- Analysis of load balancing effectiveness
+
+<p float="left", align="center">
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_analysis_circles2000.png" width="70%" />
+</p>
+<p float="left", align="center">
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_analysis_circles50000.png" width="70%" />
+</p>
+<p align="center"><b>Figure 6a</b> <i>Rendering of 1000, 10000, 50000 and 100000 circles projected on a (1024 x 1024) canvas.</i></p>
+
+<p float="left", align="center">
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_scheduling_circles2000.png" width="70%" />
+</p>
+<p float="left", align="center">
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_scheduling_circles50000.png" width="70%" />
+</p>
+<p align="center"><b>Figure 6b</b> <i>Rendering of 1000, 10000, 50000 and 100000 circles projected on a (1024 x 1024) canvas.</i></p>
+
+1) Mie considerazioni: si può facilmente notare come, per qualunque numero fissato di cerchi, lo scheduling dinamico porti generalmente a speedup maggiori rispetto allo scheduling statico, con valori tra 0.5 e 1.5 più alti. Tuttavia, l'efficienza dello scheduling dinamico è solo di poco maggiore rispetto allo statico, ed evidentemente cala all'aumentare del numero di threads, rimanendo però sempre leggermente maggiore di quella dello statico.
+A prescindere dal tipo di scheduling, l'effetto di una diversa block_size è generalmente molto limitato, ad eccezione di alcuni casi particolari come lo scheduling dinamico con 2000 cerchi.
+
+3) Lo speedup maggiore nello scheduling dinamico porta evidentemente anche a execution times minori nello scheduling dinamico.
 
 ## 4 - Conclusions and Future Work
 - Summary of key findings
