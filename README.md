@@ -78,7 +78,25 @@ The `main.cpp` file allows defining several constants, to enable multiple combin
 - `BLOCK_SIZES`: number of blocks/chunks for scheduling {16, 24, 32}
 
 ### 2.3 - Sequential Implementation
-The sequential implementation lies in the `renderSequential` method. The process consists of two main steps:
+The sequential implementation lies in the `renderSequential` method.
+
+```
+sort(circles.begin(), circles.end(),[](const Circle& c1, const Circle& c2) { return c1.z > c2.z; });
+
+for(int y = 0; y < height; y++) {
+    for(int x = 0; x < width; x++) {
+        for (const Circle& circle : circles) {
+          if (isPixelInCircle(x, y, circle)) {
+              Color finalColor;
+              finalColor = alphaBlending(circle.color, finalColor, circle.alpha);
+          }
+        }
+        canvas[y * width + x] = finalColor;
+      }
+  }
+```
+
+The process consists of two main steps:
 
 1. **Global Circle Sorting**: 
    - Sorts all circles by their z-coordinate in descending order
@@ -107,23 +125,40 @@ where `num_threads > 1`, and a small component `overhead < 1` accounts for the o
 
 By placing a simple `#pragma omp parallel` directive before the nested loops and `#pragma omp for` at the *outer* loop level, work can be easily distributed among a team of threads, in a number that is automatically decided. This initial implementation provides a baseline for parallel performance.
 
-**CODICE PARALLEL + FOR vs SEQUENTIAL**
+```
+sort(circles.begin(), circles.end(),[](const Circle& c1, const Circle& c2) { return c1.z > c2.z; });
 
-These two directives were then merged into the combined `#pragma omp parallel for` construct, which provides a more concise and potentially more efficient implementation. This refinement eliminates potential overhead from separate parallel region creation and work distribution directives.
+#pragma omp parallel
+  #pragma omp for
+  for(int y = 0; y < height; y++) { ... }
+```
 
-**CODICE PARALLEL + FOR vs PARALLEL FOR vs SEQUENTIAL**
+These two directives were then merged into the combined `#pragma omp parallel for` construct, which provides a more concise and potentially more efficient implementation. This refinement eliminates potential overhead from separate parallel region creation and work distribution directives. Then, to investigate the impact of the number of forked threads on the general performance, the `num_threads` clause was introduced. This addition allows control over the number of parallel threads.
 
-To investigate the impact of the number of forked threads on the general performance, the `num_threads` clause was introduced. This addition allows control over the number of parallel threads.
+```
+#pragma omp parallel for num_threads(NUM_THREADS)
+  for(int y = 0; y < height; y++) { ... }
+```
 
 Having two nested for loops at the pixel processing level, another interesting clause that could be evaluated was the `collapse(2)` clause, which merges the two nested loops into a single parallel region, potentially providing better load balancing and work distribution among threads.
 
+```
+#pragma omp parallel for collapse(2) num_threads(NUM_THREADS)
+  for(int y = 0; y < height; y++) { ... }
+```
+
 The final optimization phase explored different scheduling strategies and their impact on performance. OpenMP provides various scheduling options, including `static` and `dynamic` approaches, each with its own `block_size` parameter. This exploration aims to find the optimal balance between work distribution overhead and effective parallel execution.
+
+```
+#pragma omp parallel for num_threads(NUM_THREADS) schedule(static/dynamic, block_size)
+  for(int y = 0; y < height; y++) { ... }
+```
 
 ## 3 - Performance Analysis and Results
 Figure 4 clearly demonstrates how the OpenMP multithreading API can be efficient even in its simplest implementation.
 
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_vs_circles.png" width="55%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_vs_circles.png" width="45%" />
 </p>
 <p align="center"><b>Figure 4</b> <i>Execution time analysis of the parallel implementation for different canvas sizes and increasing number of circles.</i></p>
 
@@ -133,18 +168,20 @@ The graph compares execution times between sequential and parallel implementatio
 The parallel implementation of the Image Renderer shows interesting patterns. Generally, different implementation strategies show similar performances, with important improvements over the sequential implementation: using from 12 to 24 threads achieves a speedup of approximately 6-7x while still maintaining a decent efficiency (50-40%). These values generally go down as the number of circles increases. 
 
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_implementations_circles2000.png" width="65%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_circles2000.png" width="30%" />
 </p>
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/implementations_comparison_circles2000.png" width="65%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/speedup_circles2000.png" width="48%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/efficiency_circles2000.png" width="48%" />
 </p>
 <p align="center"><b>Figure 5a</b> <i>Performance analysis of different parallel implementations, with 2000 circles on a 1024x1024 canvas. Comparison of execution time and speedup and efficiency metrics.</i></p>
 
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_implementations_circles50000.png" width="65%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_circles50000.png" width="30%" />
 </p>
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/implementations_comparison_circles50000.png" width="65%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/speedup_circles50000.png" width="48%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/efficiency_circles50000.png" width="48%" />
 </p>
 <p align="center"><b>Figure 5b</b> <i>Performance analysis of different parallel implementations, with 50000 circles on a 1024x1024 canvas. Comparison of execution time and speedup and efficiency metrics.</i></p>
 
@@ -157,18 +194,20 @@ Interestingly, the implementation built to address false sharing through padding
 As demonstrated in Figure 6, `dynamic` scheduling generally shows a slightly better performance than `static` scheduling, with consistently lower execution times and higher speedups. The block size has a relatively minor impact on performance.
 
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_scheduling_circles2000.png" width="65%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/scheduling_execution_time_circles2000.png" width="30%" />
 </p>
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_analysis_circles2000.png" width="65%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_speedup_circles2000.png" width="48%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_efficiency_circles2000.png" width="48%" />
 </p>
 <p align="center"><b>Figure 6a</b> <i>Performance analysis of different scheduling strategies, with 2000 circles on a 1024x1024 canvas. Comparison of execution time and speedup and efficiency metrics.</i></p>
 
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_scheduling_circles50000.png" width="65%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/scheduling_execution_time_circles50000.png" width="30%" />
 </p>
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_analysis_circles50000.png" width="65%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_speedup_circles50000.png" width="48%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_efficiency_circles50000.png" width="48%" />
 </p>
 <p align="center"><b>Figure 6b</b> <i>Performance analysis of different scheduling strategies, with 50000 circles on a 1024x1024 canvas. Comparison of execution time and speedup and efficiency metrics.</i></p>
 
