@@ -128,35 +128,37 @@ The final optimization phase explored different scheduling strategies and their 
 
 ## 3 - Performance Analysis and Results
 
-### 3.1 - Basic Parallel Implementation Results
+### 3.1 - Thread Scaling Analysis
 - Comparison between separate and combined parallel directives
 - Analysis of overhead costs
-- Initial speedup measurements
-
-### 3.2 - Thread Scaling Analysis
+  
 - Performance scaling with different thread counts
 - Identification of optimal thread count
 - Discussion of potential bottlenecks and their impact
 
-### 3.3 - Loop Collapse Impact
+### 3.2 - Loop Collapse Impact
 - Effect of collapse clause on performance
 - Analysis of workload distribution
 - Comparison with non-collapsed implementation
 
-### 3.4 - Scheduling Strategy Evaluation
+### 3.3 - Scheduling Strategy Evaluation
 - Comparison of static vs dynamic scheduling
 - Impact of different block sizes
 - Analysis of load balancing effectiveness
 
-### 3.5 - Combined Optimization Effects
-- Interaction between different optimization techniques
-- Identification of optimal configuration
-- Discussion of trade-offs between different approaches
+1) Mie considerazioni: si può facilmente notare come, per qualunque numero fissato di cerchi, lo scheduling dinamico porti generalmente a speedup maggiori rispetto allo scheduling statico, con valori tra 0.5 e 1.5 più alti. Tuttavia, l'efficienza dello scheduling dinamico è solo di poco maggiore rispetto allo statico, ed evidentemente cala all'aumentare del numero di threads, rimanendo però sempre leggermente maggiore di quella dello statico.
+A prescindere dal tipo di scheduling, l'effetto di una diversa block_size è generalmente molto limitato, ad eccezione di alcuni casi particolari come lo scheduling dinamico con 2000 cerchi.
 
-### 3.6 - False Sharing Analysis
+3) Lo speedup maggiore nello scheduling dinamico porta evidentemente anche a execution times minori nello scheduling dinamico.
+
+### 3.4 - False Sharing Analysis
 - Identification of false sharing issues
 - Implementation of padding solution
 - Performance impact of cache line optimization
+
+2) Si può notare come contrastare il false sharing provoca in realtà un grande peggioramento in termini di execution time. Questo accade in quanto gli errori provocati dal false sharing sono molto trascurabili rispetto all'overhead che si crea in più per evitarlo. Si può notare infatti che le implementazioni che risolvono false sharing utilizzando cache line paddate a 32 o 64 byte hanno execution time addirittura superiori all'implementazione base con direttiva nell'inner loop, ovvero una implementazione effettuata con una messa in pratica scorretta delle direttive parallel.
+
+4) E' poi chiaro che all'aumentare del numero di cerchi generati, l'execution time totale aumenta sensibilmente.
 
 ## 4 - Conclusions and Future Work
 - Summary of key findings
