@@ -94,23 +94,15 @@ For realistic scenarios, the pixel processing phase dominates the execution time
 
 ### 2.4 - Parallel implementation
 
-L'implementazione parallela dell'Image Renderer si configura nel metodo *renderParallel*. 
+The parallel implementation of the Image Renderer is implemented in the *renderParallel* method. 
 
-Se la complessità dell'algoritmo di sorting è la medesima di quella dell'implementazione sequenziale, in quanto esso viene applicato a livello globale, l'operazione di blending dei colori è il vero collo di bottiglia dell'implementazione sequenziale, e quindi quella su cui è possibile migliorare le performance del programma.
+While the sorting algorithm's complexity remains the same as in the sequential implementation, as it is applied globally, the color blending operation represents the true bottleneck of the sequential implementation. Therefore, this operation presents the main opportunity for improving program performance.
 
-Tale operazione è infatti facilmente effettuabile in modo **indipendente** su ciascun pixel della superficie 2D, e quindi è possibile sfruttare le direttive di OpenMP per garantire l'esecuzione di tale operazione su più pixel su num_threads threads simultaneamente, abbattendo quindi l'Execution Time totale.
+This operation can be performed **independently** on each pixel of the 2D surface, making it possible to leverage OpenMP directives to execute these operations simultaneously on multiple pixels across num_threads threads, thus significantly reducing the total Execution Time.
 
-La complessità totale dell'*Image Renderer*, infatti, diventerebbe
-
+The total complexity of the *Image Renderer* therefore becomes:
 $$`O(num\_circles * log(num\_circles) + (canvas\_size * canvas\_size * num\_circles)/(overhead*num\_threads))`$$
-
-With `num_threads > 1`, e una piccola componente `overhead < 1` dovuta all'overhead per la creazione di multipli threads paralleli.
-
-La strategia di parallelizzazione prevede dunque di agire sul for loop innestato, nel quale avviene l'operazione di processing indipendente dei pixel, applicando per prima cosa la direttiva base `#pragma omp parallel for` fuori dal for loop esterno. In questo modo, l'operazione di *fork* e conseguente creazione dei threads avviene una sola volta, risultando in un quantitativo accettabile di overhead. Applicare la direttiva solamente al for loop interno avrebbe portato a un'operazione di *fork-join* ripetuta per ogni singola riga della superficie 2D, risultando in una gestione fortemente impattante dell'overhead di parallelizzazione, dovuto alla continua creazione e distruzione dei threads. Per fini puramente dimostrativi, ho valutato entrambi gli approcci.
-
-
-### 2.4 - Parallel Implementation
-The parallel implementation is built upon the sequential version, maintaining the same initial sorting phase while focusing on parallelizing the pixel processing phase, which is the most computationally intensive phase of the algorithm, and represents a bottleneck in the sequential implementation.
+where `num_threads > 1`, and a small component `overhead < 1` accounts for the overhead of creating multiple parallel threads.
 
 By placing a simple `#pragma omp parallel` directive before the nested loops and `#pragma omp for` at the *outer* loop level, work can be easily distributed among a team of threads, in a number that is automatically decided. This initial implementation provides a baseline for parallel performance.
 
