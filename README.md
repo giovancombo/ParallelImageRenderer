@@ -26,7 +26,7 @@ where $`color = \{r,g,b\}`$, and $A$ and $B$ are two consecutive circles after o
 <p float="center", align="center">
   <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/blending.png" width="40%" />
 </p>
-<p align="center"><b>Figure 1</b> <i>Representation of the application of alpha blending.</i></p>
+<p align="center"><b>Figure 1</b> <i>Visual representation of alpha blending.</i></p>
 
 
 So, after creating the circles, it's essential to perform two key operations **for each pixel** on the 2D surface: first, ordering the circles that would project onto that pixel according to their z-coordinate, and then calculating the pixel's final color following the alpha blending logic.
@@ -36,7 +36,7 @@ A circle with center coordinates *(xc, yc)* belongs to a pixel with coordinates 
 <p float="center", align="center">
   <img src="https://github.com/giovancombo/ImageRenderer_PPMLMidTerm/blob/main/images/pixelincircle.png" width="25%" />
 </p>
-<p align="center"><b>Figure 2</b> <i>Representation of the rule for determining whether a pixel belongs to a circle.</i></p>
+<p align="center"><b>Figure 2</b> <i>Visual representation of the pixel-circle intersection rule. Black dots represent pixels outside the circle; red dots represent pixels belonging to the circle.</i></p>
 
 The final output of the *Image Renderer* is a *(canvas_size x canvas_size)* image showing semi-transparent colored circles, which are overlapping each other.
 
@@ -121,85 +121,57 @@ Having two nested for loops at the pixel processing level, another interesting c
 The final optimization phase explored different scheduling strategies and their impact on performance. OpenMP provides various scheduling options, including `static` and `dynamic` approaches, each with its own `block_size` parameter. This exploration aims to find the optimal balance between work distribution overhead and effective parallel execution.
 
 ## 3 - Performance Analysis and Results
+Figure 4 clearly demonstrates how the OpenMP multithreading API can be efficient even in its simplest implementation.
 
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_vs_circles.png" width="60%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_vs_circles.png" width="55%" />
 </p>
-<p align="center"><b>Figure 4</b> <i>Execution times for rendering canvas with different numbers of circles.</i></p>
+<p align="center"><b>Figure 4</b> <i>Execution time analysis of the parallel implementation for different canvas sizes and increasing number of circles.</i></p>
+
+The graph compares execution times between sequential and parallel implementations (just one line of code: `#pragma omp parallel for num_threads(4)`) across different canvas sizes and number of circles. A nearly linear relationship between the number of circles and execution time is observed for each canvas size. This behavior reflects the computational complexity of the algorithm, which must process each pixel of the canvas for every single generated circle.
 
 ### 3.1 - Thread Scaling Analysis
-- Comparison between separate and combined parallel directives
-- Analysis of overhead costs
-  
-- Performance scaling with different thread counts
-- Identification of optimal thread count
-- Discussion of potential bottlenecks and their impact
+The parallel implementation of the Image Renderer shows interesting patterns. Generally, different implementation strategies show similar performances, with important improvements over the sequential implementation: using from 12 to 24 threads achieves a speedup of approximately 6-7x while still maintaining a decent efficiency (50-40%). These values generally go down as the number of circles increases. 
 
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/implementations_comparison_circles2000.png" width="70%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_implementations_circles2000.png" width="65%" />
 </p>
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/implementations_comparison_circles50000.png" width="70%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/implementations_comparison_circles2000.png" width="65%" />
 </p>
-<p align="center"><b>Figure 5a</b> <i>Rendering of 1000, 10000, 50000 and 100000 circles projected on a (1024 x 1024) canvas.</i></p>
+<p align="center"><b>Figure 5a</b> <i>Performance analysis of different parallel implementations, with 2000 circles on a 1024x1024 canvas. Comparison of execution time and speedup and efficiency metrics.</i></p>
 
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_implementations_circles2000.png" width="70%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_implementations_circles50000.png" width="65%" />
 </p>
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_implementations_circles50000.png" width="70%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/implementations_comparison_circles50000.png" width="65%" />
 </p>
-<p align="center"><b>Figure 5b</b> <i>Rendering of 1000, 10000, 50000 and 100000 circles projected on a (1024 x 1024) canvas.</i></p>
+<p align="center"><b>Figure 5b</b> <i>Performance analysis of different parallel implementations, with 50000 circles on a 1024x1024 canvas. Comparison of execution time and speedup and efficiency metrics.</i></p>
 
-#### Loop Collapse Impact
-- Effect of collapse clause on performance
-- Analysis of workload distribution
-- Comparison with non-collapsed implementation
+One of the most notable aspects is the characteristic behavior of speedup, which shows a clear tendency towards saturation as the number of threads increases. Initially, increasing the number of threads produces a *nearly linear* growth of speedup. However, beyond 12 threads, the curve begins to flatten, reaching a plateau around 6-7x for the best configurations. This behavior is correlated with a consistent decrease of efficiency from high (about 80-90% with few threads) to very low values (below 20%) with 32-64 threads. This phenomenon is a clear demonstration of the *Amdahl's Law*: even in a theoretically highly parallelizable problem like this one, some parts of the program are inherently sequential (such as the initial sorting phase), and the parallelization overhead becomes increasingly significant as the number of threads increase. Consequently, there is a limit to the performance achievable through parallelization, and adding more threads beyond that limit may even lead to worse performances.
 
 #### False Sharing Analysis
-- Identification of false sharing issues
-- Implementation of padding solution
-- Performance impact of cache line optimization
-
-2) Si può notare come contrastare il false sharing provoca in realtà un grande peggioramento in termini di execution time. Questo accade in quanto gli errori provocati dal false sharing sono molto trascurabili rispetto all'overhead che si crea in più per evitarlo. Si può notare infatti che le implementazioni che risolvono false sharing utilizzando cache line paddate a 32 o 64 byte hanno execution time addirittura superiori all'implementazione base con direttiva nell'inner loop, ovvero una implementazione effettuata con una messa in pratica scorretta delle direttive parallel.
-
-4) E' poi chiaro che all'aumentare del numero di cerchi generati, l'execution time totale aumenta sensibilmente.
+Interestingly, the implementation built to address false sharing through padding (at 32 or 64 bytes) shows a significantly worse performance, even compared to the inner loop `for` directive implementation. This suggests that the overhead introduced to manage false sharing outweighs the benefits of reducing this phenomenon.
 
 ### 3.2 - Scheduling Strategy Evaluation
-- Comparison of static vs dynamic scheduling
-- Impact of different block sizes
-- Analysis of load balancing effectiveness
+As demonstrated in Figure 6, `dynamic` scheduling generally shows a slightly better performance than `static` scheduling, with consistently lower execution times and higher speedups. The block size has a relatively minor impact on performance.
 
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_analysis_circles2000.png" width="70%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_scheduling_circles2000.png" width="65%" />
 </p>
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_analysis_circles50000.png" width="70%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_analysis_circles2000.png" width="65%" />
 </p>
-<p align="center"><b>Figure 6a</b> <i>Rendering of 1000, 10000, 50000 and 100000 circles projected on a (1024 x 1024) canvas.</i></p>
+<p align="center"><b>Figure 6a</b> <i>Performance analysis of different scheduling strategies, with 2000 circles on a 1024x1024 canvas. Comparison of execution time and speedup and efficiency metrics.</i></p>
 
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_scheduling_circles2000.png" width="70%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_scheduling_circles50000.png" width="65%" />
 </p>
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/execution_time_scheduling_circles50000.png" width="70%" />
+  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_analysis_circles50000.png" width="65%" />
 </p>
-<p align="center"><b>Figure 6b</b> <i>Rendering of 1000, 10000, 50000 and 100000 circles projected on a (1024 x 1024) canvas.</i></p>
+<p align="center"><b>Figure 6b</b> <i>Performance analysis of different scheduling strategies, with 50000 circles on a 1024x1024 canvas. Comparison of execution time and speedup and efficiency metrics.</i></p>
 
-1) Mie considerazioni: si può facilmente notare come, per qualunque numero fissato di cerchi, lo scheduling dinamico porti generalmente a speedup maggiori rispetto allo scheduling statico, con valori tra 0.5 e 1.5 più alti. Tuttavia, l'efficienza dello scheduling dinamico è solo di poco maggiore rispetto allo statico, ed evidentemente cala all'aumentare del numero di threads, rimanendo però sempre leggermente maggiore di quella dello statico.
-A prescindere dal tipo di scheduling, l'effetto di una diversa block_size è generalmente molto limitato, ad eccezione di alcuni casi particolari come lo scheduling dinamico con 2000 cerchi.
-
-3) Lo speedup maggiore nello scheduling dinamico porta evidentemente anche a execution times minori nello scheduling dinamico.
-
-## 4 - Conclusions and Future Work
-- Summary of key findings
-- Optimal configuration recommendations
-- Potential areas for further optimization
-- Lessons learned and best practices
-
-Un semplice *Image Renderer* è stato implementato in una versione sequenziale, e una parallela sfruttando le funzionalità di OpenMP. Test quantitativi delle performance in termini di speedup ed efficiency hanno provato che la parallelizzazione del codice utilizzando le direttive di OpenMP hanno nettamente migliorato le performance di esecuzione.
-La migliore combinazione di direttive e clausole è risultata essere
-
-DIRETTIVA, PARTE DI CODICE
-
-avendo prodotto uno speedup di ... e un'efficiency di ...
+## 4 - Conclusion
+This report presented the development of an Image Renderer in its sequential and parallel implementations using OpenMP. The performance analysis demonstrated that the parallelization significantly improved performances, achieving linear speedup using a limited number of threads, and reaching a peak of 7x with 16-24 threads while maintaining acceptable efficiency levels (around 40-50%). Performances obtained using configurations with too many threads demonstrated the existence and the effects of the Amdahl's Law.
