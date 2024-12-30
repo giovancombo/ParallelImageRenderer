@@ -60,7 +60,7 @@ Since circles are randomly positioned in space, different pixels on the 2D surfa
 It is then crucial to note that both operations can be performed **independently** on each of the $`canvas\_size^2`$ pixels of the 2D surface, making this *Image Renderer* an *embarrassingly parallel* problem. This characteristic promises an effective code parallelization with OpenMP.
 
 ### 2.1 - Hardware and Software setup
-[Section to be completed with hardware specifications, OpenMP and C++ versions, and a brief CMake study]
+All tests were performed on an Intel Core i7-12700H 14-core processor running at 2.7 GHz base frequency, and 16GB of RAM.
 
 ### 2.2 - Code general structure
 The project is built around a main **`Renderer`** class, which is the core of the implementation. This class manages all the operations for circle rendering. It defines the 2D surface (named "canvas") through its dimensions (for simplicity, `width = height = canvas_size`), a collection of circles to render stored in a vector, and the canvas itself implemented as a linear array of pixels, where each pixel is represented by a `Color` object, which defines its RGB values.
@@ -194,22 +194,18 @@ Interestingly, the implementation built to address false sharing through padding
 As demonstrated in Figure 6, `dynamic` scheduling generally shows a slightly better performance than `static` scheduling, with consistently lower execution times and higher speedups. The block size has a relatively minor impact on performance.
 
 <p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/scheduling_execution_time_circles2000.png" width="30%" />
-</p>
-<p float="left", align="center">
   <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_speedup_circles2000.png" width="48%" />
   <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_efficiency_circles2000.png" width="48%" />
 </p>
-<p align="center"><b>Figure 6a</b> <i>Performance analysis of different scheduling strategies, with 2000 circles on a 1024x1024 canvas. Comparison of execution time and speedup and efficiency metrics.</i></p>
+<p align="center"><b>Figure 6a</b> <i>Performance analysis of different scheduling strategies, with 2000 circles on a 1024x1024 canvas. Comparison of speedup and efficiency metrics.</i></p>
 
-<p float="left", align="center">
-  <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/scheduling_execution_time_circles50000.png" width="30%" />
-</p>
 <p float="left", align="center">
   <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_speedup_circles50000.png" width="48%" />
   <img src="https://github.com/giovancombo/ParallelImageRenderer/blob/main/images/plots/block_size_efficiency_circles50000.png" width="48%" />
 </p>
-<p align="center"><b>Figure 6b</b> <i>Performance analysis of different scheduling strategies, with 50000 circles on a 1024x1024 canvas. Comparison of execution time and speedup and efficiency metrics.</i></p>
+<p align="center"><b>Figure 6b</b> <i>Performance analysis of different scheduling strategies, with 50000 circles on a 1024x1024 canvas. Comparison of speedup and efficiency metrics.</i></p>
+
+This advantage of dynamic scheduling can be explained by analyzing the actual workload distribution in the renderer. In theory, each pixel requires the same computational work: checking intersections with every circle and calculating the final color. However, the workload varies significantly across different pixels, because some pixels fall into more circles than others, requiring more alpha blending operations than others. Static scheduling assigns fixed rows of the canvas to each thread, which can lead to unbalanced workload. Dynamic scheduling, on the other hand, ensures a more uniform work distribution during execution.
 
 ## 4 - Conclusion
 This report presented the development of an Image Renderer in its sequential and parallel implementations using OpenMP. The performance analysis demonstrated that parallelization significantly improved performances, achieving linear speedup using a limited number of threads, and reaching a peak of 7x with 16-24 threads while maintaining acceptable efficiency levels (around 40-50%). Performances obtained using configurations with too many threads demonstrated the existence and the effects of Amdahl's Law.
